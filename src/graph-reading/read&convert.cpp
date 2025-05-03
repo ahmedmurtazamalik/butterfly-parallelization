@@ -12,10 +12,9 @@ using namespace std;
 
 int main()
 {
-    unsigned long long numNodes = 0;
     unsigned long long uCount = 0;
     unsigned long long iCount = 0;
-    unsigned long long nodeCount = 1;
+    unsigned long long numNodes = 0;
     unsigned long long numEdges = 0;
 
     // Read field.dat to get u and i nodes
@@ -24,6 +23,7 @@ int main()
     unordered_set<string> u_nodes, i_nodes;
     ifstream field_file("../../dataset/field.dat");
     string fline;
+    int nodeIndex = 1;
 
     while (getline(field_file, fline))
     {
@@ -32,111 +32,81 @@ int main()
         string set_str;
         if (iss >> id >> set_str)
         {
+            string nodeName = set_str + to_string(id);
+            metisNodes[nodeIndex++] = nodeName;
+            numNodes++;
             if (set_str == "u")
-            {
-                string nodeName = set_str + to_string(id);
-                u_nodes.insert(nodeName);
-                metisNodes[nodeCount++] = nodeName;
                 uCount++;
-                numNodes++;
-            }
             else if (set_str == "i")
-            {
-                string nodeName = set_str + to_string(id);
-                i_nodes.insert(nodeName);
-                metisNodes[nodeCount++] = nodeName;
                 iCount++;
-                numNodes++;
-            }
         }
     }
     field_file.close();
 
-    // Read edges file
-    unordered_map<string, vector<string>> edges;
+    // Reverse map for lookup
+    unordered_map<string, int> reverseMap;
+    for (const auto &p : metisNodes)
+    {
+        reverseMap[p.second] = p.first;
+    }
+
+    // Read edges.dat and build adjacency
     ifstream edges_file("../../dataset/edges.dat");
     string eline;
-
     while (getline(edges_file, eline))
     {
         istringstream iss(eline);
         string node1, node2, weight;
-
         if (iss >> node1 >> node2 >> weight)
+        {
+            int u = reverseMap[node1];
+            int v = reverseMap[node2];
+            metisEdges[u].push_back(v);
+            metisEdges[v].push_back(u);
             numEdges++;
-
-        edges[node1].push_back(node2);
-        edges[node2].push_back(node1);
+        }
     }
     edges_file.close();
 
-    /*
-    // Example output to verify the adjacency list
-    for (const auto& entry : edges) {
-        cout << entry.first << " -> ";
-        for (const string& neighbor : entry.second) {
-            cout << neighbor << " ";
-        }
-        cout << endl;
-    }
-    */
-
-    // Reverse map of metis nodes for easy lookup
-    map<string, int> reverseMap;
-    for (const auto &pair : metisNodes)
+    long long unsigned realedgeCount = 0;
+    // Remove duplicate neighbors and ensure sorted order
+    for (auto &entry : metisEdges)
     {
-        reverseMap[pair.second] = pair.first;
+        auto &nbrs = entry.second;
+        sort(nbrs.begin(), nbrs.end());
+        nbrs.erase(unique(nbrs.begin(), nbrs.end()), nbrs.end());
+        realedgeCount += nbrs.size();
     }
 
-    /*
-    // METIS FORMAT OUTPUT: NODES ONLY
-    cout << "METIS node set size: " << metisNodes.size() << endl << endl;
-    for (const auto& entry : metisNodes) {
-        cout << entry.first << ": " << entry.second << endl;
-    }
+    cout << numEdges << endl;
+    cout << realedgeCount << endl;
 
-    */
-
-    // Writing the graph in METIS format
-    for (const auto &entry : edges)
-    {
-        string node = entry.first;
-        int n1 = reverseMap[node];
-        for (const string &neighbor : entry.second)
-        {
-            int n2 = reverseMap[neighbor];
-            metisEdges[n1].push_back(n2);
-            metisEdges[n2].push_back(n1);
-        }
-    }
-
-    // verify edges in METIS format
-    for (const auto &entry : metisEdges)
-    {
-        cout << entry.first << ": ";
-        for (const int &neighbor : entry.second)
-        {
-            cout << neighbor << " ";
-        }
-        cout << endl;
-    }
-
-    // Save only the values (neighbors) from metisEdges to a file
+    // Write graph.metis with exactly numNodes lines
     ofstream outfile("graph.metis");
-    for (const auto &entry : metisEdges)
+    // METIS expects number of vertices and edges (undirected edge count)
+    outfile << numNodes << " " << realedgeCount / 2 << "\n";
+
+    // For each node index from 1..numNodes, write its adjacency list or blank line
+    for (int idx = 1; idx <= (int)numNodes; ++idx)
     {
-        for (const int &neighbor : entry.second)
+        auto it = metisEdges.find(idx);
+        if (it != metisEdges.end())
         {
-            outfile << neighbor << " ";
+            for (int nbr : it->second)
+            {
+                outfile << nbr << " ";
+            }
         }
-        outfile << endl;
+        // even if no neighbors, this will output an empty line
+        outfile << "\n";
     }
     outfile.close();
 
+    // Summary
+    cout << "TOTAL NODES: " << numNodes << endl;
+    cout << "TOTAL EDGES: " << numEdges << " (undirected)" << endl;
     cout << "U NODES: " << uCount << endl;
     cout << "I NODES: " << iCount << endl;
-    cout << "TOTAL NODES: " << numNodes << endl;
-    cout << "TOTAL EDGES: " << numEdges << endl;
 
     return 0;
 }

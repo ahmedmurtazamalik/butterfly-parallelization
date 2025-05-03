@@ -24,7 +24,7 @@ while len(edge_lines) < num_edges:
     edge_lines.add(edge)
 
 # Save to files
-nodes_path = "nodes.dat"
+nodes_path = "field.dat"
 edges_path = "edges.dat"
 
 with open(nodes_path, "w") as f:

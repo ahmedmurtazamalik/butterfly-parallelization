@@ -1,0 +1,17 @@
+METIS Installation & Usage
+
+INSTALLATION
+Install it in linux by:
+sudo apt update
+sudo apt install metis
+
+Verify the installation by:
+dpkg -l metis
+gpmetis --help
+
+USAGE:
+k = the number of partitions
+it should be equal to the number of processors
+
+Command to partition a graph file:
+gpmetis graph.metis k
