@@ -10,12 +10,13 @@
 #include <ctime>
 #include "openMPCount.h"
 #include "serialCount.h"
-
+#define NUM_THREADS 8
 using namespace std;
 
 
 int main() {
     mainSerial();
+    omp_set_num_threads(NUM_THREADS); 
     mainOMP();
     return 0;
 }
