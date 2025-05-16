@@ -1,6 +1,7 @@
 Dataset:
 - A graph of any number of nodes and edges can be generated using the given bpg.py python script. The variables denoting the amount of nodes in each set and the amount of approximate unique edges (approximate because duplicates might occur during randomization) must be changed from within the script to desired values before running. The script will generate "edges.dat" and "field.dat", which can then be read into C++ hashmaps using read&convert.cpp.
 - The unweighted graph used for the ParButterfly paper has also been given, along with a script to read it into C++ hashmaps as well.
+- The generated datasets can be plotted using the "plot.py" script.
 - Sample datasets given include:
   1. "edges.dat" and "field.dat" files which define the edges and nodes in the bipartite graph. This graph has 5k nodes and ≈100k unique edges.
   2. The ParButterfly paper graph stored in "paperGraph.txt"
